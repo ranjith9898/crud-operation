@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="fe934740-b701-4811-90c7-fcc823388793" >
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="f539ec30-ad07-402b-becb-fa4cd1600e78" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Bevarse@#1234" database="ranjithdb" />
+	</db:config>
+	<flow name="selectall-flow" doc:id="03e2bd5e-94aa-4488-ad9b-2694f79838c1" >
+		<http:listener doc:name="Listener" doc:id="00e2bc37-ddd2-4f66-8bd2-22765bb79590" config-ref="HTTP_Listener_config" path="/selectall"/>
+		<logger level="INFO" doc:name="Logger" doc:id="3c3cea8c-094f-4d51-8f05-d23206d8fd0c" message="#[flow.name] started"/>
+		<db:select doc:name="Select" doc:id="4c343821-da7c-4a2d-8ece-346f51726be2" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from persons;]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="c82293be-9b3d-4161-a408-3de38abc64c2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="11cff2af-e79c-4244-90fb-0daa7a7f5166" message="#[payload]"/>
+	</flow>
+	<flow name="selectbyid-flow" doc:id="b5660b73-aca3-41e9-90f6-9ddb453ba735" >
+		<http:listener doc:name="Listener" doc:id="54b3e472-79d4-4de3-9545-d27b2fb0d409" config-ref="HTTP_Listener_config" path="/selectbyid"/>
+		<logger level="INFO" doc:name="Logger" doc:id="ae36f8b5-b918-475f-8c1a-0af0ef0b8dd2" message="#[flow.name] started"/>
+		<db:select doc:name="Select" doc:id="a1bdccb9-f057-4ec3-9815-0c27bfb3db0b" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from persons where PersonID = :PersonID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'PersonID':attributes.queryParams.PersonID
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="2343c41a-45e5-4925-acfa-74e05e3914d7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="04b84d97-f24c-4c5f-9247-e2573689919d" message="#[payload]"/>
+	</flow>
+	<flow name="insert-flow" doc:id="918b0b22-c1b8-41a4-8428-d5c091d35f30" >
+		<http:listener doc:name="Listener" doc:id="7cce91f8-f957-44d6-b56c-2a5d30f73d1a" config-ref="HTTP_Listener_config" path="/insert"/>
+		<logger level="INFO" doc:name="Logger" doc:id="645c7adb-6438-4777-9f5f-35a7ba4395ac" message="#[flow.name] started"/>
+		<db:bulk-insert doc:name="Bulk insert" doc:id="8d71ad6f-74c6-4b8d-941c-00b7ff9b7735" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into persons (FirstName,Address,City,PersonID,LastName) values (:FirstName,:Address,:City,:PersonID,:LastName)]]></db:sql>
+		</db:bulk-insert>
+		<ee:transform doc:name="Transform Message" doc:id="4e11c2cb-da84-41eb-9e75-adc79fc45210" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+sum(payload)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="ff66f5c2-1911-4a85-86ce-037a6921d62a" message="#[payload]]"/>
+	</flow>
+	<flow name="crud-operationsFlow" doc:id="56ddb8a1-46df-4fde-8092-ac9d75913f35" >
+	</flow>
+	<flow name="update-flow" doc:id="0370865e-5015-4000-b13f-4cc80d740cd4" >
+		<http:listener doc:name="Listener" doc:id="46f53f3a-e6f0-447a-b01f-2e75c6340f95" config-ref="HTTP_Listener_config" path="/update"/>
+		<logger level="INFO" doc:name="Logger" doc:id="87ed2775-f7ff-45c0-955b-b06fb3dda5b4" message="#[flow.name] started"/>
+		<db:update doc:name="Update" doc:id="17ac8628-5699-4dbd-ae47-5ef4ef4b0cc4" config-ref="Database_Config">
+			<db:sql ><![CDATA[update persons set FirstName = :FirstName,Address = :Address,City = :City,LastName =:LastName]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'PersonID':attributes.queryParams.PersonID
+}]]]></db:input-parameters>
+		</db:update>
+	</flow>
+	<flow name="delete-flow" doc:id="6c8c9c03-2985-47f5-b1f1-e7140a2f6fe6" >
+		<http:listener doc:name="Listener" doc:id="51f27ae5-6668-42d8-8029-9b99469ef91c" config-ref="HTTP_Listener_config" path="/delete"/>
+		<db:delete doc:name="Delete" doc:id="9c320468-f39d-4a1f-a397-5eeefd362947" config-ref="Database_Config">
+			<db:sql ><![CDATA[delete from persons where PersonID = :PersonID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'PersonID':attributes.queryParams.PersonID
+}]]]></db:input-parameters>
+		</db:delete>
+		<ee:transform doc:name="Transform Message" doc:id="0ace9ade-8be7-40f2-9bee-27f9c0ab0ee0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f39fd200-a51d-49f2-8998-51e1e548caf5" message="#[payload]show output.....]"/>
+	</flow>
+</mule>
